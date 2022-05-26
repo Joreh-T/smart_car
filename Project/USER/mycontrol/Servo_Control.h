@@ -14,6 +14,7 @@
 
 void Branch_Road_Judge(void);
 void Island_Judge(void);
+void Branch_Road_Judge_2(void);
 
 
 #endif // !__SERVO_CONTROL_H__

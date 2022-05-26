@@ -2,7 +2,7 @@
 // @Author       : 孙雾崆 1489389972@qq.com
 // @Date         : 2022-03-19 17:42:24
 // @LastEditors  : 孙雾崆 1489389972@qq.com
-// @LastEditTime : 2022-05-25 00:13:16
+// @LastEditTime : 2022-05-25 20:48:59
 // @FilePath     : \STC16_V2\Project\USER\mycontrol\Error_Model.c
 // @coding       : UTF-8
 // @Description  : 
@@ -87,6 +87,7 @@ float Get_Err(float L_Outside, float L_Inside, float R_Outside, float R_Inside, 
 
 void MagneticField_Data_refresh(void) {
     uint8 times = 2;
+    static uint8 compare_times = 0;
     // Inductor_ADC[Left_Outside] = 0;
     Inductor_ADC[Left_Midle] = 0;
     Inductor_ADC[Left_Inside] = 0;
@@ -164,6 +165,16 @@ void MagneticField_Data_refresh(void) {
     // 归一化到0--100
     // N_ADC[Left_Outside] = 102*(Inductor_ADC[Left_Outside] - Min_ADC[Left_Outside])
     //                              / (Max_ADC[Left_Outside] - Min_ADC[Left_Outside]);
+    if (2 == compare_times) {
+        Last_N_ADC[Left_Midle]   = N_ADC[Left_Midle];
+        Last_N_ADC[Left_Inside]  = N_ADC[Left_Inside];
+        Last_N_ADC[Right_Inside] = N_ADC[Right_Inside];
+        Last_N_ADC[Right_Midle]  = N_ADC[Right_Midle];
+        compare_times = 0;
+    }
+    else
+        compare_times++;
+
     N_ADC[Left_Midle] = (100.0 * (Inductor_ADC[Left_Midle] - Min_ADC[Left_Midle]) / (Max_ADC[Left_Midle] - Min_ADC[Left_Midle]));
     N_ADC[Left_Inside] = (100.0 * (Inductor_ADC[Left_Inside] - Min_ADC[Left_Inside]) / (Max_ADC[Left_Inside] - Min_ADC[Left_Inside]));
     N_ADC[Right_Inside] = (100.0 * (Inductor_ADC[Right_Inside] - Min_ADC[Right_Inside]) / (Max_ADC[Right_Inside] - Min_ADC[Right_Inside]));

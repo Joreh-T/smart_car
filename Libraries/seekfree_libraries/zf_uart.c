@@ -148,6 +148,7 @@ void uart_init(UARTN_enum uart_n, UARTPIN_enum uart_rx_pin, UARTPIN_enum uart_tx
 			}
 			
 			IE2 |= 0x01<<3;	//允许串行口3中断
+			// IE2 &= 0xF7;	//管壁串行口3中断
 			busy[3] = 0;
 			break;
 		}

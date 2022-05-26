@@ -2,7 +2,7 @@
 // @Author       : 孙雾崆 1489389972@qq.com
 // @Date         : 2022-03-19 23:51:09
 // @LastEditors  : 孙雾崆 1489389972@qq.com
-// @LastEditTime : 2022-05-25 00:08:57
+// @LastEditTime : 2022-05-25 22:29:03
 // @FilePath     : \STC16_V2\Project\USER\mycontrol\Servo_Control.c
 // @coding       : UTF-8
 // @Description  :
@@ -127,7 +127,7 @@ void Branch_Road_Judge(void) {
             BEEP_ON;
         }
         if (Branch_Integrate > 17000) {
-            Branc_Turn_Dire = !Branc_Turn_Dire;
+            Branc_Turn_Dire = (0 == Branc_Turn_Dire) ? 1 : 0;
             BEEP_OFF;
             Branch_Integrate = 0;
             Branch_State = 0;
@@ -139,3 +139,60 @@ void Branch_Road_Judge(void) {
     }
 }
 
+
+void Branch_Road_Judge_2(void) {
+    switch (Branch_State) {
+    case 0:
+        if (Last_N_ADC[Left_Midle]   <  N_ADC[Left_Midle] && 
+            Last_N_ADC[Right_Midle]  < N_ADC[Right_Midle] &&
+            Last_N_ADC[Left_Inside]  > N_ADC[Left_Inside] &&
+            Last_N_ADC[Right_Inside] > N_ADC[Right_Inside] )
+            Branch_Compare_Count++;
+        if (Branch_Compare_Count > 8) {
+            Branch_State = 1;
+            Branch_Compare_Count = 0;
+        }
+        break;
+    case 1:
+        judge = ((N_ADC[Left_Inside] - N_ADC[Left_Midle]) * (N_ADC[Left_Inside] - N_ADC[Left_Midle]) + (N_ADC[Right_Inside] - N_ADC[Right_Midle]) * (N_ADC[Right_Inside] - N_ADC[Right_Midle])) /
+                (N_ADC[Left_Inside] + N_ADC[Right_Inside]);
+        if (judge < 20 && 
+            N_ADC[Left_Midle] < 30 && N_ADC[Right_Midle] < 30 && 
+            N_ADC[Left_Midle] > 10 && N_ADC[Right_Midle] > 10 &&
+            N_ADC[Left_Inside] < 70 && N_ADC[Right_Inside] < 70 &&
+            N_ADC[Left_Inside] > 40 && N_ADC[Right_Inside] > 40
+            ) {
+            Branch_State = 2;
+        }
+        break;
+    case 2:
+        BEEP_ON;
+        Branch_Integrate += speed;
+        if (0 == Branc_Turn_Dire && Branch_Integrate < 2300) {
+            pwm_duty(PWMA_CH4N_P17, 570); // 右转
+        } else if (1 == Branc_Turn_Dire && Branch_Integrate < 2300) {
+            pwm_duty(PWMA_CH4N_P17, 960); // 左转
+        } else if (Branch_Integrate > 2300) {
+            Branch_Integrate = 0;
+            BEEP_OFF;
+            Branch_State = 3;
+        }
+        break;
+    case 3:  // 强制转向结束，进入三叉
+        BEEP_OFF;
+        Branch_Integrate += speed;
+        if (Branch_Integrate > 15000) {
+            BEEP_ON;
+        }
+        if (Branch_Integrate > 17000) {
+            Branc_Turn_Dire = !Branc_Turn_Dire;
+            BEEP_OFF;
+            Branch_Integrate = 0;
+            Branch_State = 0;
+        }
+        break;
+    default:
+        Branch_State = Branch_State;
+        break;
+    }
+}

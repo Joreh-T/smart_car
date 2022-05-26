@@ -77,14 +77,9 @@ void UART4_Isr() interrupt 18
         UART4_CLEAR_RX_FLAG;
 
 		//接收数据寄存器为：S4BUF;
-		if(wireless_type == WIRELESS_SI24R1)
-        {
-            wireless_uart_callback();           //无线转串口回调函数
-        }
-        else if(wireless_type == WIRELESS_CH9141)
-        {
-            bluetooth_ch9141_uart_callback();   //蓝牙转串口回调函数
-        }
+        CH573_Rec_Command = S4BUF;
+        Analysis_CH573_Receive_Commands();
+        
 	}
 }
 
@@ -128,20 +123,22 @@ void TM0_Isr() interrupt 1 {
         Island_Judge();
     }
     if (0 == Island_State) {
-        Branch_Road_Judge();
+        // Branch_Road_Judge();
+        Branch_Road_Judge_2();
     }
     
     // 超时复位
-    if (5 == Island_State || 2 == Branch_State) {
+    if (5 == Island_State || 3 == Branch_State) {
         State_Reset_Count = 0;
     }
-    if (0 != Branch_State || 0 != Island_State) {
+    if (0 != Branch_State || 0 != Island_State || 0x00 != CH573_Rec_Command) {
         // LED_Ctrl(LED1, ON);
         State_Reset_Count += 1;
         if (State_Reset_Count > 400) {
             Island_State = ( Island_State > 1) ? Island_State : 0;
         }
-        if (State_Reset_Count > 3000) {
+        if (State_Reset_Count > 2500) {
+            CH573_Rec_Command = 0x00;
             Branch_State = (0 == Branch_State) ? Branch_State : 0;
             Island_State = (0 == Island_State) ? Island_State : 0;
             State_Reset_Count = 0;
@@ -181,7 +178,7 @@ void TM0_Isr() interrupt 1 {
     motor_duty(speed_duty);
 
     /**************舵机PID***************/
-    if (Branch_State != 1 && 3 != Island_State && 5 != Island_State) {
+    if (2 != Branch_State && 3 != Island_State && 5 != Island_State) {
         servo_duty = PidLocCtrl(&servo_pid, servo_error) + 750;
         servo_duty = (servo_duty > 970) ? 970 : ((servo_duty < 560) ? 560 : servo_duty);
         pwm_duty(PWMA_CH4N_P17, servo_duty);
