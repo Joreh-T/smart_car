@@ -78,7 +78,7 @@ void UART4_Isr() interrupt 18
 
 		//接收数据寄存器为：S4BUF;
         CH573_Rec_Command = S4BUF;
-        Analysis_CH573_Receive_Commands();
+        // Analysis_CH573_Receive_Commands();
         
 	}
 }
@@ -128,17 +128,18 @@ void TM0_Isr() interrupt 1 {
     }
     
     // 超时复位
-    if (5 == Island_State || 3 == Branch_State) {
+    if (EXIT_ISLAND == Island_State || ENTER_BRANCH == Branch_State) {
         State_Reset_Count = 0;
     }
-    if (0 != Branch_State || 0 != Island_State || 0x00 != CH573_Rec_Command) {
+    if (IDLE_ISLAND != Branch_State || IDLE_BRANCH != Island_State) {
         // LED_Ctrl(LED1, ON);
+        
         State_Reset_Count += 1;
         if (State_Reset_Count > 400) {
             Island_State = ( Island_State > 1) ? Island_State : 0;
         }
         if (State_Reset_Count > 2500) {
-            CH573_Rec_Command = 0x00;
+            // CH573_Rec_Command = 0x00;
             Branch_State = (0 == Branch_State) ? Branch_State : 0;
             Island_State = (0 == Island_State) ? Island_State : 0;
             State_Reset_Count = 0;

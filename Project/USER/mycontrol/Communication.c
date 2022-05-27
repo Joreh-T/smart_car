@@ -2,7 +2,7 @@
 // @Author       : 孙雾崆 1489389972@qq.com
 // @Date         : 2022-05-24 20:30:39
 // @LastEditors  : 孙雾崆 1489389972@qq.com
-// @LastEditTime : 2022-05-26 14:53:37
+// @LastEditTime : 2022-05-27 22:56:14
 // @FilePath     : \STC16_V2\Project\USER\mycontrol\Communication.c
 // @coding       : UTF-8
 // @Description  : 多车通信
@@ -31,12 +31,18 @@ void Analysis_CH573_Receive_Commands(void) {
     if (0x00 == Command_Object || 0x03 == Command_Object) {
         CH573_Rec_Command = (CH573_Rec_Command & 0x3F);
     } else {
-        CH573_Rec_Command = 0x00;
+        CH573_Rec_Command = CH573_Rec_Command;
     }
 
 }
 
-//该函数在isr.c文件中的UART3_Isr函数进行回调
+
+
+/**
+ * @description: 解算两车之间的距离，该函数在isr.c文件中的UART3_Isr函数进行回调
+ * @param  <uint8> buf
+ * @return <None>
+ */
 void Split_Ultrasonic_callback(uint8 buf) {
     static uint8 dat[3];
     static uint8 num = 0;
