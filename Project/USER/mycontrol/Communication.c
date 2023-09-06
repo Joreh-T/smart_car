@@ -2,7 +2,7 @@
 // @Author       : 孙雾崆 1489389972@qq.com
 // @Date         : 2022-05-24 20:30:39
 // @LastEditors  : 孙雾崆 1489389972@qq.com
-// @LastEditTime : 2022-05-27 22:56:14
+// @LastEditTime : 2022-05-28 13:30:22
 // @FilePath     : \STC16_V2\Project\USER\mycontrol\Communication.c
 // @coding       : UTF-8
 // @Description  : 多车通信
@@ -25,7 +25,7 @@ void CH573_Send_Commands(uint8 Command) { uart_putchar(UART_4, Command); }
 void Analysis_CH573_Receive_Commands(void) {
     uint8 Command_Object; // 接收命令对象
 
-    Command_Object = (CH573_Rec_Command & 0xC0) >> 6;
+    // Command_Object = ;
 
     // 接收广播命令或发送给尾车的命令
     if (0x00 == Command_Object || 0x03 == Command_Object) {
@@ -63,3 +63,5 @@ void Split_Ultrasonic_callback(uint8 buf) {
     busy[3] = 0;
     while (busy[3]);
 }
+
+

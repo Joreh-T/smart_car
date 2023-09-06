@@ -2,8 +2,8 @@
 // @Author       : 孙雾崆 1489389972@qq.com
 // @Date         : 2022-05-24 23:53:22
 // @LastEditors  : 孙雾崆 1489389972@qq.com
-// @LastEditTime : 2022-05-27 21:59:22
-// @FilePath     : \STC16_V2\Project\USER\inc\SWK_Headerfile.h
+// @LastEditTime : 2022-05-28 17:00:07
+// @FilePath     : \STC16_V3\Project\USER\inc\SWK_Headerfile.h
 // @coding       : UTF-8
 // @Description  : 
 //============================================================================//
@@ -44,6 +44,11 @@ extern uint16 Max_ADC[6];
 extern uint8  CH573_Rec_Command; // 接收到的命令
 extern uint16 distance;         // 两车之间的距离
 // extern uint8  Analyzed_Command;
+
+
+// extern pid_param_t motor_pid;
+// extern pid_param_t servo_pid;
+// extern Model_Param servo_erro_pram;
 
 #define BEEP_ON  P34 = 1; // beep
 #define BEEP_OFF P34 = 0; // beep

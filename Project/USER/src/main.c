@@ -2,7 +2,7 @@
 // @Author       : 孙雾崆 1489389972@qq.com
 // @Date         : 2022-05-24 23:40:39
 // @LastEditors  : 孙雾崆 1489389972@qq.com
-// @LastEditTime : 2022-05-27 22:53:36
+// @LastEditTime : 2022-05-28 15:10:48
 // @FilePath     : \STC16_V2\Project\USER\src\main.c
 // @coding       : UTF-8
 // @Description  :
@@ -49,9 +49,12 @@ uint16 Max_ADC[6] = {550, 1000, 1300, 1300, 1000, 550};
 // servo_pid.target = 750;
 
 void main() {
-    uint8 Engine_Power = 0;
+    uint8 Engine_Power = 1;
+    uint8 Mode = 0;
+    // extern int speed_duty;
     motor_pid.target = 0;
     servo_pid.kp = 2.22;
+    
     DisableGlobalIRQ(); //关闭总中断
 
     // sys_clk可选值:30000000, 27000000. 24000000, 22118400, 20000000, 18432000, 12000000, 11059200, 6000000, 5529600。
@@ -110,59 +113,137 @@ void main() {
     //总中断最后开启
     EnableGlobalIRQ(); //开启总中断
     while (1) {
-        // oled_int16(0, 0, 1);
+        MagneticField_Data_refresh();
         if ((CH573_Rec_Command & 0x3F) == Car_1_Out) {
             Engine_Power = 1;
         }
+
         if (1 == Engine_Power) {
-            MagneticField_Data_refresh();
+
+            // Mode = Drive_Mode();
+            Mode = 0;
+            
             servo_error = Get_Err(N_ADC[Left_Midle], N_ADC[Left_Inside], N_ADC[Right_Midle], N_ADC[Right_Inside], servo_erro_pram);
+            servo_error = (servo_error < -200) ? -200 : servo_error;
 
-            if (ENTER_BRANCH == Branch_State) {
-                servo_error = servo_error / 3.5;
-            }
+            // if (ENTER_BRANCH == Branch_State) {
+            //     servo_error = servo_error / 3.5;
+            // }
+            servo_error = (ENTER_BRANCH == Branch_State) ? (servo_error / 3.5) : servo_error;
 
-            // 1号车进入三叉减速且是第一圈
-            if (Car_1_Enter_Branch == (CH573_Rec_Command & 0x3F) && IDLE_BRANCH == Branch_State && 0 == Branch_Turn_Dire) {
-                motor_pid.target = 25;
-            }
-            // 2号车在三叉启动
-            else if (Car_2_Start_Branch == (CH573_Rec_Command & 0x3F)) {
-                BEEP_ON;
-                motor_pid.target = (motor_pid.target < 35) ? (motor_pid.target += 0.1) : 35;
-                if (motor_pid.target >= 34.5) {
-                    // CH573_Rec_Command = 0x00;
-                    BEEP_OFF;
+            switch (Mode) {
+            case 0:
+                if (-35 < servo_error && servo_error < 35 && IDLE_BRANCH == Branch_State && IDLE_ISLAND == Island_State) {
+                    motor_pid.target = STRAIGHT_SPEED;
+                    servo_pid.kp = 1.90;
+                    servo_pid.kd = 0.001;
                 }
-            }
-            // 强制转向进入三叉或环岛减速
-            else if (EXECUTE_BRANCH == Branch_State || EXECUTE_ISLAND == Island_State) {
-                motor_pid.target = 22;
-            }
-            // 进入三叉且2号车还没发车继续保持低速且是第一圈
-            else if (ENTER_BRANCH == Branch_State && (Car_1_Enter_Branch == (CH573_Rec_Command&0x3F) || Car_1_GoOut_Branch == (CH573_Rec_Command & 0x3F)) && 0 == Branch_Turn_Dire) {
+
+                else if (EXECUTE_BRANCH == Branch_State || EXECUTE_ISLAND == Island_State) {
+                    motor_pid.target = 20;
+                }
+
+                // 正常转向
+                else {
+                    motor_pid.target = 45 - 0.05 * fabs(servo_error);
+                    motor_pid.target = (motor_pid.target < 25) ? 25 : motor_pid.target;
+                    servo_pid.kp = 2.22;
+                    servo_pid.kd = 0.01;
+                }
+                break;
+
+            case 1:
                 motor_pid.target = 25;
-            }
-            // 直路行驶
-            else if (-35 < servo_error && servo_error < 35 && IDLE_BRANCH == Branch_State) {
-                motor_pid.target = STRAIGHT_SPEED;
-                servo_pid.kp = 1.90;
-                servo_pid.kd = 0.001;
-            }
-            // 正常转向
-            else {
-                motor_pid.target = 45 - 0.04 * fabs(servo_error);
-                motor_pid.target = (motor_pid.target < 25) ? 25 : motor_pid.target;
+                if (EXECUTE_BRANCH == Branch_State || EXECUTE_ISLAND == Island_State) {
+                    motor_pid.target = 20;
+                }
                 servo_pid.kp = 2.22;
                 servo_pid.kd = 0.01;
+                break;
+
+            case 2:
+                motor_pid.target = 25;
+                if (EXECUTE_BRANCH == Branch_State || EXECUTE_ISLAND == Island_State) {
+                    motor_pid.target = 20;
+                }
+                servo_pid.kp = 2.22;
+                servo_pid.kd = 0.01;
+                break;
+
+            default:
+                break;
             }
 
             if (distance < 500) {
-                motor_pid.target = distance / 20;
+                motor_pid.target = distance / 25;
             }
         }
+        oled_int16(0, 0, N_ADC[Left_Midle]);
+        oled_int16(0, 1, N_ADC[Left_Inside]);
+        oled_int16(0, 2, N_ADC[Right_Inside]);
+        oled_int16(0, 3, N_ADC[Right_Midle]);
+        oled_int16(0, 4, servo_error);
+        oled_uint16(0, 5, distance);
+        oled_int16(0, 6, Branch_Compare_Count);
+        oled_int16(0, 7, Mode);
 
-        // //*********************** v1  *************************************//
+        oled_int16(70, 0, Branch_State);
+        oled_int16(70, 1, Island_State);
+        // oled_int16(70, 2, Branch_Integrate);
+        oled_int16(70, 3, (CH573_Rec_Command & 0x3F));
+        oled_int16(70, 4, motor_pid.target);
+        oled_int16(70, 4, motor_pid.target);
+
+        //*********************** v2  *************************************//
+        // if (1 == Engine_Power) {
+        //     MagneticField_Data_refresh();
+        //     servo_error = Get_Err(N_ADC[Left_Midle], N_ADC[Left_Inside], N_ADC[Right_Midle], N_ADC[Right_Inside], servo_erro_pram);
+
+        //     if (ENTER_BRANCH == Branch_State) {
+        //         servo_error = servo_error / 3.5;
+        //     }
+
+        //     // 1号车进入三叉减速且是第一圈
+        //     if (Car_1_Enter_Branch == (CH573_Rec_Command & 0x3F) && IDLE_BRANCH == Branch_State && 0 == Branch_Turn_Dire) {
+        //         motor_pid.target = 25;
+        //     }
+        //     // 2号车在三叉启动
+        //     else if (Car_2_Start_Branch == (CH573_Rec_Command & 0x3F)) {
+        //         BEEP_ON;
+        //         motor_pid.target = (motor_pid.target < 35) ? (motor_pid.target += 0.1) : 35;
+        //         if (motor_pid.target >= 34.5) {
+        //             // CH573_Rec_Command = 0x00;
+        //             BEEP_OFF;
+        //         }
+        //     }
+        //     // 强制转向进入三叉或环岛减速
+        //     else if (EXECUTE_BRANCH == Branch_State || EXECUTE_ISLAND == Island_State) {
+        //         motor_pid.target = 20;
+        //     }
+        //     // 进入三叉且2号车还没发车继续保持低速且是第一圈
+        //     else if (ENTER_BRANCH == Branch_State && Car_2_Start_Branch != (CH573_Rec_Command & 0x3F) && 0 == Branch_Turn_Dire) {
+        //         motor_pid.target = 25;
+        //     }
+        //     // 直路行驶
+        //     else if (-35 < servo_error && servo_error < 35 && IDLE_BRANCH == Branch_State) {
+        //         motor_pid.target = STRAIGHT_SPEED;
+        //         servo_pid.kp = 1.90;
+        //         servo_pid.kd = 0.001;
+        //     }
+        //     // 正常转向
+        //     else {
+        //         motor_pid.target = 45 - 0.04 * fabs(servo_error);
+        //         motor_pid.target = (motor_pid.target < 25) ? 25 : motor_pid.target;
+        //         servo_pid.kp = 2.22;
+        //         servo_pid.kd = 0.01;
+        //     }
+
+        //     if (distance < 500) {
+        //         motor_pid.target = distance / 25;
+        //     }
+        // }
+
+        //*********************** v1  *************************************//
         // if (1 == Engine_Power) {
         //     MagneticField_Data_refresh();
         //     servo_error = Get_Err(N_ADC[Left_Midle], N_ADC[Left_Inside], N_ADC[Right_Midle], N_ADC// // [Right_Inside], servo_erro_pram);
@@ -226,20 +307,7 @@ void main() {
         //     }
         // }
 
-        oled_int16(0, 0, N_ADC[Left_Midle]);
-        oled_int16(0, 1, N_ADC[Left_Inside]);
-        oled_int16(0, 2, N_ADC[Right_Inside]);
-        oled_int16(0, 3, N_ADC[Right_Midle]);
-        oled_int16(0, 4, servo_error);
-        oled_uint16(0, 5, distance);
-        oled_int16(0, 6, Branch_Compare_Count);
-        oled_int16(0, 7, judge);
-
-        oled_int16(70, 0, Branch_State);
-        oled_int16(70, 1, Island_State);
-        // oled_int16(70, 2, Branch_Integrate);
-        oled_int16(70, 3, (CH573_Rec_Command & 0x3F));
-        oled_int16(70, 4, motor_pid.target);
+       
 
         // Led_count++;
         // if (Led_count > 250) {

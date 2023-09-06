@@ -2,7 +2,7 @@
 // @Author       : 孙雾崆 1489389972@qq.com
 // @Date         : 2022-03-19 23:51:09
 // @LastEditors  : 孙雾崆 1489389972@qq.com
-// @LastEditTime : 2022-05-27 22:27:45
+// @LastEditTime : 2022-05-28 14:21:26
 // @FilePath     : \STC16_V2\Project\USER\mycontrol\Servo_Control.c
 // @coding       : UTF-8
 // @Description  :
@@ -27,7 +27,7 @@ void Island_Judge(void) {
             Island_State = READY_ISLAND; // 即将转向
         }
         break;
-    case READY_ISLAND: 
+    case READY_ISLAND:
         if (N_ADC[Left_Midle] >= 30 && N_ADC[Left_Midle] <= 70 && N_ADC[Left_Inside] >= 90 && N_ADC[Right_Inside] >= 69 && N_ADC[Right_Midle] <= 20) {
             Island_State = EXECUTE_ISLAND; // 转向
         }
@@ -37,7 +37,7 @@ void Island_Judge(void) {
         Island_Integrate += speed;
         if (Island_Integrate < 2500) {
             pwm_duty(PWMA_CH4N_P17, 970); // 左转
-            
+
         } else if (Island_Integrate >= 2500) {
             Island_Integrate = 0;
             Island_State = ENTER_ISLAND;
@@ -56,10 +56,10 @@ void Island_Judge(void) {
         Island_Integrate += speed;
         if (Island_Integrate < 3000) {
             pwm_duty(PWMA_CH4N_P17, 970);
-        } 
+        }
         // else if (Island_Integrate >= 2500 && Island_Integrate < 3500) {
         //     pwm_duty(PWMA_CH4N_P17, 750);
-        // } 
+        // }
         else if (Island_Integrate > 3000) {
             BEEP_OFF;
             Island_Integrate = 0;
@@ -72,14 +72,13 @@ void Island_Judge(void) {
     }
 }
 
-
 // uint8 Branch_State = 0;      // 三叉状态
 // uint8 Branch_Turn_Dire = 0;   // 三叉转弯方向
 // uint16 Branch_Integrate = 0; // 三叉转向积分
 // uint16 speed;                // 编码器读取计数
 
 /**
- * @description: 
+ * @description:
  * @return <None>
  */
 void Branch_Road_Judge(void) {
@@ -124,7 +123,7 @@ void Branch_Road_Judge(void) {
             Branch_State = 2;
         }
         break;
-    case 2:  // 强制转向结束，进入三叉
+    case 2: // 强制转向结束，进入三叉
         BEEP_OFF;
         Branch_Integrate += speed;
         if (Branch_Integrate > 15000) {
@@ -154,11 +153,9 @@ void Branch_Road_Judge_2(void) {
     switch (Branch_State) {
     // 空闲状态
     case IDLE_BRANCH:
-    // 竖直增，平行减
-        if (Last_N_ADC[Left_Midle]   < N_ADC[Left_Midle] && 
-            Last_N_ADC[Right_Midle]  < N_ADC[Right_Midle] &&
-            Last_N_ADC[Left_Inside]  > N_ADC[Left_Inside] &&
-            Last_N_ADC[Right_Inside] > N_ADC[Right_Inside] )
+        // 竖直增，平行减
+        if (Last_N_ADC[Left_Midle] < N_ADC[Left_Midle] && Last_N_ADC[Right_Midle] < N_ADC[Right_Midle] && Last_N_ADC[Left_Inside] > N_ADC[Left_Inside] &&
+            Last_N_ADC[Right_Inside] > N_ADC[Right_Inside])
             Branch_Compare_Count++;
         if (Branch_Compare_Count > 8) {
             Branch_State = READY_BRANCH;
@@ -170,12 +167,8 @@ void Branch_Road_Judge_2(void) {
     case READY_BRANCH:
         judge = ((N_ADC[Left_Inside] - N_ADC[Left_Midle]) * (N_ADC[Left_Inside] - N_ADC[Left_Midle]) + (N_ADC[Right_Inside] - N_ADC[Right_Midle]) * (N_ADC[Right_Inside] - N_ADC[Right_Midle])) /
                 (N_ADC[Left_Inside] + N_ADC[Right_Inside]);
-        if (judge < 20 && 
-            N_ADC[Left_Midle] < 30 && N_ADC[Right_Midle] < 30 && 
-            N_ADC[Left_Midle] > 10 && N_ADC[Right_Midle] > 10 &&
-            N_ADC[Left_Inside] < 70 && N_ADC[Right_Inside] < 70 &&
-            N_ADC[Left_Inside] > 40 && N_ADC[Right_Inside] > 40
-            ) {
+        if (judge < 20 && N_ADC[Left_Midle] < 30 && N_ADC[Right_Midle] < 30 && N_ADC[Left_Midle] > 10 && N_ADC[Right_Midle] > 10 && N_ADC[Left_Inside] < 70 && N_ADC[Right_Inside] < 70 &&
+            N_ADC[Left_Inside] > 40 && N_ADC[Right_Inside] > 40) {
             Branch_State = EXECUTE_BRANCH;
         }
         break;
@@ -187,7 +180,7 @@ void Branch_Road_Judge_2(void) {
 
         // 打角转向
         if (0 == Branch_Turn_Dire && Branch_Integrate < 2300) {
-            pwm_duty(PWMA_CH4N_P17, 570+ 0.006 * Branch_Integrate); // 右转
+            pwm_duty(PWMA_CH4N_P17, 570 + 0.006 * Branch_Integrate); // 右转
         } else if (1 == Branch_Turn_Dire && Branch_Integrate < 2300) {
             pwm_duty(PWMA_CH4N_P17, 960 - 0.006 * Branch_Integrate); // 左转
         } else if (Branch_Integrate > 2300) {
@@ -217,4 +210,25 @@ void Branch_Road_Judge_2(void) {
         Branch_State = Branch_State;
         break;
     }
+}
+
+uint8 Drive_Mode(void) {
+    static uint8 mode = 0;
+    // 1号车进入三叉减速且是第一圈
+    if (Car_1_Enter_Branch == (CH573_Rec_Command & 0x3F) && IDLE_BRANCH == Branch_State && 0 == Branch_Turn_Dire) {
+        mode = 1;
+    }
+
+    // 进入三叉且2号车还没发车继续保持低速且是第一圈
+    if (ENTER_BRANCH == Branch_State && Car_2_Start_Branch != (CH573_Rec_Command & 0x3F) && 0 == Branch_Turn_Dire) {
+        mode = 2;
+    }
+
+    // 2号车在三叉启动
+    if (Car_2_Start_Branch == (CH573_Rec_Command & 0x3F)) {
+        mode = 0;
+    }
+
+    return mode;
+
 }

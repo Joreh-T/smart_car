@@ -11,11 +11,6 @@
 #ifndef __SERVO_CONTROL_H__
 #define __SERVO_CONTROL_H__
 
-
-void Branch_Road_Judge(void);
-void Island_Judge(void);
-void Branch_Road_Judge_2(void);
-
 // 三叉各个状态
 #define IDLE_BRANCH         0
 #define READY_BRANCH        1
@@ -30,6 +25,14 @@ void Branch_Road_Judge_2(void);
 #define EXECUTE_ISLAND      3
 #define ENTER_ISLAND        4
 #define EXIT_ISLAND         5
+
+
+void Branch_Road_Judge(void);
+void Island_Judge(void);
+void Branch_Road_Judge_2(void);
+uint8 Drive_Mode(void);
+
+
 
 
 

@@ -131,6 +131,7 @@ void TM0_Isr() interrupt 1 {
     if (EXIT_ISLAND == Island_State || ENTER_BRANCH == Branch_State) {
         State_Reset_Count = 0;
     }
+    
     if (IDLE_ISLAND != Branch_State || IDLE_BRANCH != Island_State) {
         // LED_Ctrl(LED1, ON);
         
